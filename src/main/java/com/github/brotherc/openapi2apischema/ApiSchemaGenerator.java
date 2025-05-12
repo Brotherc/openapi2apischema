@@ -13,6 +13,7 @@ import io.swagger.models.properties.ArrayProperty;
 import io.swagger.models.properties.ObjectProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
+import io.swagger.models.utils.PropertyModelConverter;
 import io.swagger.parser.Swagger20Parser;
 import io.swagger.parser.SwaggerParser;
 import org.apache.commons.lang3.StringUtils;
@@ -112,8 +113,8 @@ public class ApiSchemaGenerator {
     }
 
     private static ParameterSchema transformParameter(Parameter parameter, Swagger swagger) {
-        String type = "";
-        String format = "";
+        String type;
+        String format;
 
         if (parameter instanceof AbstractSerializableParameter) {
             AbstractSerializableParameter serializableParameter = (AbstractSerializableParameter) parameter;
@@ -158,31 +159,13 @@ public class ApiSchemaGenerator {
         } else if (parameter instanceof BodyParameter) {
             BodyParameter bodyParameter = (BodyParameter) parameter;
             Model schema = bodyParameter.getSchema();
-            Map<String, Model> definitions = swagger.getDefinitions();
-            if (schema instanceof RefModel) {
-                RefModel refModel = (RefModel) schema;
-                Model model = definitions.get(refModel.getSimpleRef());
-                ParameterObjectSchema parameterObjectSchema = new ParameterObjectSchema();
-                parameterObjectSchema.setName(parameter.getName());
-                parameterObjectSchema.setIn(parameter.getIn());
-                parameterObjectSchema.setDescription(parameter.getDescription());
-                parameterObjectSchema.setRequired(parameter.getRequired());
-                parameterObjectSchema.setType(ParameterType.OBJECT.getDisplayName());
-                parameterObjectSchema.setExample(bodyParameter.getExamples());
-                if (model.getProperties() != null && !model.getProperties().isEmpty()) {
-                    parameterObjectSchema.setProperties(
-                            model.getProperties().entrySet().stream()
-                                    .map(entry -> parseProperties(entry.getKey(), entry.getValue(), swagger))
-                                    .collect(Collectors.toList())
-                    );
-                }
-                return parameterObjectSchema;
-            } else if (schema instanceof ArrayModel) {
-                // TODO
-                System.out.println("BodyParameter ArrayModel");
-            } else if (schema instanceof ModelImpl) {
-                // TODO
-                System.out.println("BodyParameter ModelImpl");
+            if (schema instanceof RefModel || schema instanceof ArrayModel || schema instanceof ModelImpl) {
+                Property property = new PropertyModelConverter().modelToProperty(schema);
+                ParameterSchema parameterSchema = parseProperties(swagger, parameter.getName(), property, new HashMap<>());
+                parameterSchema.setIn(parameter.getIn());
+                parameterSchema.setDescription(parameter.getDescription());
+                parameterSchema.setRequired(parameter.getRequired());
+                return parameterSchema;
             } else if (schema instanceof BooleanValueModel) {
                 // TODO
                 System.out.println("BodyParameter BooleanValueModel");
@@ -195,7 +178,8 @@ public class ApiSchemaGenerator {
         return new ParameterSchema();
     }
 
-    private static ParameterSchema parseProperties(String name, Property property, Swagger swagger) {
+    private static ParameterSchema parseProperties(
+            Swagger swagger, String name, Property property, Map<String, ParameterSchema> parsedRefProperty) {
         ParameterSchema parameterSchema = new ParameterSchema();
         ParameterType parameterType = ParameterType.getParameterType(property);
         parameterSchema.setName(name);
@@ -206,25 +190,39 @@ public class ApiSchemaGenerator {
         if (ParameterType.isStructDataType(parameterType)) {
             if (property instanceof ArrayProperty) {
                 ParameterArraySchema parameterArraySchema = ParameterArraySchema.of(parameterSchema);
-                parameterArraySchema.setItems(parseProperties(null, ((ArrayProperty) property).getItems(), swagger));
+                parameterArraySchema.setItems(parseProperties(swagger, null, ((ArrayProperty) property).getItems(), parsedRefProperty));
                 return parameterArraySchema;
             } else if (property instanceof RefProperty || property instanceof ObjectProperty) {
+                ParameterObjectSchema parameterObjectSchema = ParameterObjectSchema.of(parameterSchema);
+
                 Map<String, Property> properties;
+                String simpleRef = null;
                 if (property instanceof RefProperty) {
                     Map<String, Model> definitions = swagger.getDefinitions();
                     Model model = definitions.get(((RefProperty) property).getSimpleRef());
                     properties = model.getProperties();
+
+                    simpleRef = ((RefProperty) property).getSimpleRef();
+                    if (parsedRefProperty.containsKey(simpleRef)) {
+                        parameterObjectSchema.setType(simpleRef);
+                        parsedRefProperty.get(simpleRef).setType(simpleRef);
+                        return parameterObjectSchema;
+                    } else {
+                        parsedRefProperty.put(simpleRef, parameterObjectSchema);
+                    }
                 } else {
                     properties = ((ObjectProperty) property).getProperties();
                 }
 
-                ParameterObjectSchema parameterObjectSchema = ParameterObjectSchema.of(parameterSchema);
                 if (properties != null && !properties.isEmpty()) {
                     parameterObjectSchema.setProperties(
                             properties.entrySet().stream()
-                                    .map(entry -> parseProperties(entry.getKey(), entry.getValue(), swagger))
+                                    .map(entry -> parseProperties(swagger, entry.getKey(), entry.getValue(), parsedRefProperty))
                                     .collect(Collectors.toList())
                     );
+                }
+                if (simpleRef != null) {
+                    parsedRefProperty.remove(simpleRef);
                 }
                 return parameterObjectSchema;
             }

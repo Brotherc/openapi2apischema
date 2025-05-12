@@ -15,7 +15,7 @@ public enum ParameterType {
     NUMBER("decimal", "number", ""),
     STRING("string", "string", ""),
     BYTE("byte", "string", "byte"),
-    BINARY("string", "string", "binary"),
+    BINARY("file", "string", "binary"),
     BOOLEAN("boolean", "boolean", ""),
     DATE("date", "string", "date"),
     DATETIME("dateTime", "string", "date-time"),

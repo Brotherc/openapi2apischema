@@ -2,10 +2,7 @@ package com.github.brotherc.openapi2apischema;
 
 import com.github.brotherc.openapi2apischema.enums.OpenApiVersion;
 import com.github.brotherc.openapi2apischema.enums.ParameterType;
-import com.github.brotherc.openapi2apischema.model.ApiSchema;
-import com.github.brotherc.openapi2apischema.model.ParameterArraySchema;
-import com.github.brotherc.openapi2apischema.model.ParameterSchema;
-import com.github.brotherc.openapi2apischema.model.SwaggerOperationHolder;
+import com.github.brotherc.openapi2apischema.model.*;
 import io.swagger.models.*;
 import io.swagger.models.auth.AuthorizationValue;
 import io.swagger.models.parameters.AbstractSerializableParameter;
@@ -14,6 +11,8 @@ import io.swagger.models.parameters.Parameter;
 import io.swagger.models.parameters.RefParameter;
 import io.swagger.models.properties.ArrayProperty;
 import io.swagger.models.properties.ObjectProperty;
+import io.swagger.models.properties.Property;
+import io.swagger.models.properties.RefProperty;
 import io.swagger.parser.Swagger20Parser;
 import io.swagger.parser.SwaggerParser;
 import org.apache.commons.lang3.StringUtils;
@@ -134,6 +133,7 @@ public class ApiSchemaGenerator {
                     parameterArraySchema.setItems(parameterSchema);
                 } else {
                     // TODO
+                    System.out.println("AbstractSerializableParameter数组中是结构体");
                 }
                 return parameterArraySchema;
             } else {
@@ -151,16 +151,81 @@ public class ApiSchemaGenerator {
         } else if (parameter instanceof RefParameter) {
             RefParameter refParameter = (RefParameter) parameter;
             type = ObjectProperty.TYPE;
+            // TODO
+            System.out.println("RefParameter");
         } else if (parameter instanceof BodyParameter) {
             BodyParameter bodyParameter = (BodyParameter) parameter;
-            Model model = bodyParameter.getSchema();
+            Model schema = bodyParameter.getSchema();
             Map<String, Model> definitions = swagger.getDefinitions();
-            if (model instanceof RefModel) {
-                RefModel refModel = (RefModel) model;
+            if (schema instanceof RefModel) {
+                RefModel refModel = (RefModel) schema;
+                Model model = definitions.get(refModel.getSimpleRef());
+                ParameterObjectSchema parameterObjectSchema = new ParameterObjectSchema();
+                parameterObjectSchema.setName(parameter.getName());
+                parameterObjectSchema.setIn(parameter.getIn());
+                parameterObjectSchema.setDescription(parameter.getDescription());
+                parameterObjectSchema.setRequired(parameter.getRequired());
+                parameterObjectSchema.setType(ParameterType.OBJECT.getDisplayName());
+                if (model.getProperties() != null && !model.getProperties().isEmpty()) {
+                    parameterObjectSchema.setProperties(
+                            model.getProperties().entrySet().stream()
+                                    .map(entry -> parseProperties(entry.getKey(), entry.getValue(), swagger))
+                                    .collect(Collectors.toList())
+                    );
+                }
+                return parameterObjectSchema;
+            } else if (schema instanceof ArrayModel) {
+                // TODO
+                System.out.println("BodyParameter ArrayModel");
+            } else if (schema instanceof ModelImpl) {
+                // TODO
+                System.out.println("BodyParameter ModelImpl");
+            } else if (schema instanceof BooleanValueModel) {
+                // TODO
+                System.out.println("BodyParameter BooleanValueModel");
+            } else if (schema instanceof ComposedModel) {
+                // TODO
+                System.out.println("BodyParameter ComposedModel");
             }
         }
 
         return new ParameterSchema();
+    }
+
+    private static ParameterSchema parseProperties(String name, Property property, Swagger swagger) {
+        ParameterSchema parameterSchema = new ParameterSchema();
+        ParameterType parameterType = ParameterType.getParameterType(property);
+        parameterSchema.setName(name);
+        parameterSchema.setType(parameterType.getDisplayName());
+        parameterSchema.setRequired(property.getRequired());
+        parameterSchema.setDescription(property.getDescription());
+        if (ParameterType.isStructDataType(parameterType)) {
+            if (property instanceof ArrayProperty) {
+                ParameterArraySchema parameterArraySchema = ParameterArraySchema.of(parameterSchema);
+                parameterArraySchema.setItems(parseProperties(null, ((ArrayProperty) property).getItems(), swagger));
+                return parameterArraySchema;
+            } else if (property instanceof RefProperty || property instanceof ObjectProperty) {
+                Map<String, Property> properties;
+                if (property instanceof RefProperty) {
+                    Map<String, Model> definitions = swagger.getDefinitions();
+                    Model model = definitions.get(((RefProperty) property).getSimpleRef());
+                    properties = model.getProperties();
+                } else {
+                    properties = ((ObjectProperty) property).getProperties();
+                }
+
+                ParameterObjectSchema parameterObjectSchema = ParameterObjectSchema.of(parameterSchema);
+                if (properties != null && !properties.isEmpty()) {
+                    parameterObjectSchema.setProperties(
+                            properties.entrySet().stream()
+                                    .map(entry -> parseProperties(entry.getKey(), entry.getValue(), swagger))
+                                    .collect(Collectors.toList())
+                    );
+                }
+                return parameterObjectSchema;
+            }
+        }
+        return parameterSchema;
     }
 
     private static ParameterSchema parseResponses(Map<String, Response> responses, Swagger swagger) {

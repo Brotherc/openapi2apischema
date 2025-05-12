@@ -12,6 +12,8 @@ public class ParameterSchema {
 
     private String type;
 
+    private Object example;
+
     public String getName() {
         return name;
     }
@@ -50,6 +52,14 @@ public class ParameterSchema {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public Object getExample() {
+        return example;
+    }
+
+    public void setExample(Object example) {
+        this.example = example;
     }
 
 }

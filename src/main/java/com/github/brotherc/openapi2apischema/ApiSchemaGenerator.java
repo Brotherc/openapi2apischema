@@ -127,6 +127,7 @@ public class ApiSchemaGenerator {
                 parameterArraySchema.setDescription(parameter.getDescription());
                 parameterArraySchema.setRequired(parameter.getRequired());
                 parameterArraySchema.setType(ParameterType.ARRAY.getDisplayName());
+                parameterArraySchema.setExample(serializableParameter.getExample());
                 if (!ParameterType.isStructDataType(parameterType)) {
                     ParameterSchema parameterSchema = new ParameterSchema();
                     parameterSchema.setType(parameterType.getDisplayName());
@@ -142,6 +143,7 @@ public class ApiSchemaGenerator {
                 parameterSchema.setIn(parameter.getIn());
                 parameterSchema.setDescription(parameter.getDescription());
                 parameterSchema.setRequired(parameter.getRequired());
+                parameterSchema.setExample(serializableParameter.getExample());
                 String typeName = Optional.ofNullable(ParameterType.getParameterType(type, format))
                         .map(ParameterType::getDisplayName)
                         .orElse("");
@@ -166,6 +168,7 @@ public class ApiSchemaGenerator {
                 parameterObjectSchema.setDescription(parameter.getDescription());
                 parameterObjectSchema.setRequired(parameter.getRequired());
                 parameterObjectSchema.setType(ParameterType.OBJECT.getDisplayName());
+                parameterObjectSchema.setExample(bodyParameter.getExamples());
                 if (model.getProperties() != null && !model.getProperties().isEmpty()) {
                     parameterObjectSchema.setProperties(
                             model.getProperties().entrySet().stream()
@@ -199,6 +202,7 @@ public class ApiSchemaGenerator {
         parameterSchema.setType(parameterType.getDisplayName());
         parameterSchema.setRequired(property.getRequired());
         parameterSchema.setDescription(property.getDescription());
+        parameterSchema.setExample(property.getExample());
         if (ParameterType.isStructDataType(parameterType)) {
             if (property instanceof ArrayProperty) {
                 ParameterArraySchema parameterArraySchema = ParameterArraySchema.of(parameterSchema);

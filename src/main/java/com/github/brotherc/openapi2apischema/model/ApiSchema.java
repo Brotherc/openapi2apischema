@@ -18,6 +18,8 @@ public class ApiSchema {
 
     private String description;
 
+    private List<String> consumes;
+
     private List<String> tags;
 
     private List<ParameterSchema> parameters;
@@ -78,6 +80,14 @@ public class ApiSchema {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public List<String> getConsumes() {
+        return consumes;
+    }
+
+    public void setConsumes(List<String> consumes) {
+        this.consumes = consumes;
     }
 
     public List<String> getTags() {

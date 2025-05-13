@@ -96,6 +96,7 @@ public class ApiSchemaGenerator {
             apiSchema.setCnName(operation.getSummary());
             apiSchema.setDescription(operation.getDescription());
             apiSchema.setTags(operation.getTags());
+            apiSchema.setConsumes(operation.getConsumes());
 
             apiSchema.setParameters(parseParameters(operation.getParameters(), swagger));
             apiSchema.setResponses(parseResponses(operation.getResponses(), swagger));

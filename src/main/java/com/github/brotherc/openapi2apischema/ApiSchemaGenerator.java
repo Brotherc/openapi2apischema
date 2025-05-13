@@ -218,7 +218,9 @@ public class ApiSchemaGenerator {
                 if (properties != null && !properties.isEmpty()) {
                     parameterObjectSchema.setProperties(
                             properties.entrySet().stream()
-                                    .map(entry -> parseProperties(swagger, entry.getKey(), entry.getValue(), parsedRefProperty))
+                                    .map(entry ->
+                                            parseProperties(swagger, entry.getKey(), entry.getValue(), parsedRefProperty)
+                                    )
                                     .collect(Collectors.toList())
                     );
                 }
@@ -232,7 +234,16 @@ public class ApiSchemaGenerator {
     }
 
     private static ParameterSchema parseResponses(Map<String, Response> responses, Swagger swagger) {
-        return null;
+        if (responses == null || responses.isEmpty()) {
+            return null;
+        }
+
+        Model responseSchema = responses.get("200").getResponseSchema();
+        if (responseSchema == null) {
+            return null;
+        }
+        Property property = new PropertyModelConverter().modelToProperty(responseSchema);
+        return parseProperties(swagger, property.getName(), property, new HashMap<>());
     }
 
     private static List<ApiSchema> parse20(Swagger read) {

@@ -1,5 +1,7 @@
 package com.github.brotherc.openapi2apischema;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.github.brotherc.openapi2apischema.enums.OpenApiVersion;
 import com.github.brotherc.openapi2apischema.enums.ParameterType;
 import com.github.brotherc.openapi2apischema.model.*;
@@ -23,6 +25,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ApiSchemaGenerator {
+
+    private static ObjectMapper objectMapper = new ObjectMapper();
 
     private ApiSchemaGenerator() {
     }
@@ -98,29 +102,40 @@ public class ApiSchemaGenerator {
             apiSchema.setTags(operation.getTags());
             apiSchema.setConsumes(operation.getConsumes());
 
-            apiSchema.setParameters(parseParameters(operation.getParameters(), swagger));
-            apiSchema.setResponses(parseResponses(operation.getResponses(), swagger));
+            apiSchema.setParameters(parseParameters(operation.getParameters(), swagger).getParameterSchemaList());
+            apiSchema.setResponses(parseResponses(operation.getResponses(), swagger).getParameterSchema());
 
             return apiSchema;
         }).collect(Collectors.toList());
     }
 
-    private static List<ParameterSchema> parseParameters(List<Parameter> parameterList, Swagger swagger) {
+    private static ParameterSchemaHolder parseParameters(List<Parameter> parameterList, Swagger swagger) {
         if (parameterList == null || parameterList.isEmpty()) {
-            return Collections.emptyList();
+            return new ParameterSchemaHolder();
         }
 
-        return parameterList.stream().map(parameter -> transformParameter(parameter, swagger)).collect(Collectors.toList());
+        List<ParameterSchema> parameterSchemaList = new ArrayList<>();
+        ArrayNode displaySchemaList = objectMapper.createArrayNode();
+        for (Parameter parameter : parameterList) {
+            ParameterSchemaHolder parameterSchemaHolder = transformParameter(parameter, swagger);
+            parameterSchemaList.add(parameterSchemaHolder.getParameterSchema());
+            displaySchemaList.add(parameterSchemaHolder.getDisplaySchema());
+        }
+
+        ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
+        parameterSchemaHolder.setParameterSchemaList(parameterSchemaList);
+        parameterSchemaHolder.setDisplaySchemaList(displaySchemaList);
+
+        return parameterSchemaHolder;
     }
 
-    private static ParameterSchema transformParameter(Parameter parameter, Swagger swagger) {
-        String type;
-        String format;
+    private static ParameterSchemaHolder transformParameter(Parameter parameter, Swagger swagger) {
+        ParameterSchema parameterSchema = new ParameterSchema();
 
         if (parameter instanceof AbstractSerializableParameter) {
             AbstractSerializableParameter serializableParameter = (AbstractSerializableParameter) parameter;
-            type = serializableParameter.getType();
-            format = serializableParameter.getFormat();
+            String type = serializableParameter.getType();
+            String format = serializableParameter.getFormat();
             if (ArrayProperty.TYPE.equals(type)) {
                 ParameterArraySchema parameterArraySchema = new ParameterArraySchema();
                 ParameterType parameterType = ParameterType.getParameterType(serializableParameter.getItems());
@@ -131,16 +146,16 @@ public class ApiSchemaGenerator {
                 parameterArraySchema.setType(ParameterType.ARRAY.getDisplayName());
                 parameterArraySchema.setExample(serializableParameter.getExample());
                 if (!ParameterType.isStructDataType(parameterType)) {
-                    ParameterSchema parameterSchema = new ParameterSchema();
-                    parameterSchema.setType(parameterType.getDisplayName());
-                    parameterArraySchema.setItems(parameterSchema);
+                    ParameterSchema itemsSchema = new ParameterSchema();
+                    itemsSchema.setType(parameterType.getDisplayName());
+                    parameterArraySchema.setItems(itemsSchema);
                 } else {
                     // TODO
                     System.out.println("AbstractSerializableParameter数组中是结构体");
                 }
-                return parameterArraySchema;
+                parameterSchema = parameterArraySchema;
             } else {
-                ParameterSchema parameterSchema = new ParameterSchema();
+                parameterSchema = new ParameterSchema();
                 parameterSchema.setName(parameter.getName());
                 parameterSchema.setIn(parameter.getIn());
                 parameterSchema.setDescription(parameter.getDescription());
@@ -150,11 +165,10 @@ public class ApiSchemaGenerator {
                         .map(ParameterType::getDisplayName)
                         .orElse("");
                 parameterSchema.setType(typeName);
-                return parameterSchema;
             }
         } else if (parameter instanceof RefParameter) {
             RefParameter refParameter = (RefParameter) parameter;
-            type = ObjectProperty.TYPE;
+            String type = ObjectProperty.TYPE;
             // TODO
             System.out.println("RefParameter");
         } else if (parameter instanceof BodyParameter) {
@@ -162,11 +176,11 @@ public class ApiSchemaGenerator {
             Model schema = bodyParameter.getSchema();
             if (schema instanceof RefModel || schema instanceof ArrayModel || schema instanceof ModelImpl) {
                 Property property = new PropertyModelConverter().modelToProperty(schema);
-                ParameterSchema parameterSchema = parseProperties(swagger, parameter.getName(), property, new HashMap<>());
+                ParameterSchemaHolder parameterSchemaHolder = parseProperties(swagger, parameter.getName(), property, new HashMap<>());
+                parameterSchema = parameterSchemaHolder.getParameterSchema();
                 parameterSchema.setIn(parameter.getIn());
                 parameterSchema.setDescription(parameter.getDescription());
                 parameterSchema.setRequired(parameter.getRequired());
-                return parameterSchema;
             } else if (schema instanceof BooleanValueModel) {
                 // TODO
                 System.out.println("BodyParameter BooleanValueModel");
@@ -176,10 +190,12 @@ public class ApiSchemaGenerator {
             }
         }
 
-        return new ParameterSchema();
+        ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
+        parameterSchemaHolder.setParameterSchema(parameterSchema);
+        return parameterSchemaHolder;
     }
 
-    private static ParameterSchema parseProperties(
+    private static ParameterSchemaHolder parseProperties(
             Swagger swagger, String name, Property property, Map<String, ParameterSchema> parsedRefProperty) {
         ParameterSchema parameterSchema = new ParameterSchema();
         ParameterType parameterType = ParameterType.getParameterType(property);
@@ -191,8 +207,9 @@ public class ApiSchemaGenerator {
         if (ParameterType.isStructDataType(parameterType)) {
             if (property instanceof ArrayProperty) {
                 ParameterArraySchema parameterArraySchema = ParameterArraySchema.of(parameterSchema);
-                parameterArraySchema.setItems(parseProperties(swagger, null, ((ArrayProperty) property).getItems(), parsedRefProperty));
-                return parameterArraySchema;
+                ParameterSchemaHolder parameterSchemaHolder = parseProperties(swagger, null, ((ArrayProperty) property).getItems(), parsedRefProperty);
+                parameterArraySchema.setItems(parameterSchemaHolder.getParameterSchema());
+                parameterSchema = parameterArraySchema;
             } else if (property instanceof RefProperty || property instanceof ObjectProperty) {
                 ParameterObjectSchema parameterObjectSchema = ParameterObjectSchema.of(parameterSchema);
 
@@ -207,7 +224,9 @@ public class ApiSchemaGenerator {
                     if (parsedRefProperty.containsKey(simpleRef)) {
                         parameterObjectSchema.setType(simpleRef);
                         parsedRefProperty.get(simpleRef).setType(simpleRef);
-                        return parameterObjectSchema;
+                        ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
+                        parameterSchemaHolder.setParameterSchema(parameterObjectSchema);
+                        return parameterSchemaHolder;
                     } else {
                         parsedRefProperty.put(simpleRef, parameterObjectSchema);
                     }
@@ -216,31 +235,33 @@ public class ApiSchemaGenerator {
                 }
 
                 if (properties != null && !properties.isEmpty()) {
-                    parameterObjectSchema.setProperties(
-                            properties.entrySet().stream()
-                                    .map(entry ->
-                                            parseProperties(swagger, entry.getKey(), entry.getValue(), parsedRefProperty)
-                                    )
-                                    .collect(Collectors.toList())
-                    );
+                    List<ParameterSchema> parameterSchemaList = new ArrayList<>();
+                    for (Map.Entry<String, Property> entry : properties.entrySet()) {
+                        ParameterSchemaHolder parameterSchemaHolder = parseProperties(swagger, entry.getKey(), entry.getValue(), parsedRefProperty);
+                        parameterSchemaList.add(parameterSchemaHolder.getParameterSchema());
+                    }
+                    parameterObjectSchema.setProperties(parameterSchemaList);
                 }
                 if (simpleRef != null) {
                     parsedRefProperty.remove(simpleRef);
                 }
-                return parameterObjectSchema;
+                parameterSchema = parameterObjectSchema;
             }
         }
-        return parameterSchema;
+
+        ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
+        parameterSchemaHolder.setParameterSchema(parameterSchema);
+        return parameterSchemaHolder;
     }
 
-    private static ParameterSchema parseResponses(Map<String, Response> responses, Swagger swagger) {
+    private static ParameterSchemaHolder parseResponses(Map<String, Response> responses, Swagger swagger) {
         if (responses == null || responses.isEmpty()) {
-            return null;
+            return new ParameterSchemaHolder();
         }
 
-        Model responseSchema = responses.get("200").getResponseSchema();
+        Model responseSchema = Optional.ofNullable(responses.get("200")).map(Response::getResponseSchema).orElse(null);
         if (responseSchema == null) {
-            return null;
+            return new ParameterSchemaHolder();
         }
         Property property = new PropertyModelConverter().modelToProperty(responseSchema);
         return parseProperties(swagger, property.getName(), property, new HashMap<>());

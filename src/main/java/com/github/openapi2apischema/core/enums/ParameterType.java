@@ -1,4 +1,4 @@
-package com.github.brotherc.openapi2apischema.enums;
+package com.github.openapi2apischema.core.enums;
 
 import io.swagger.models.properties.*;
 

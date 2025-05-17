@@ -1,4 +1,4 @@
-package com.github.brotherc.openapi2apischema.constant;
+package com.github.openapi2apischema.core.constant;
 
 public class ApiSchemaConstant {
 

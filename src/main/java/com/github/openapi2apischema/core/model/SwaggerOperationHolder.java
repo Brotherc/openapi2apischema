@@ -1,4 +1,4 @@
-package com.github.brotherc.openapi2apischema.model;
+package com.github.openapi2apischema.core.model;
 
 import io.swagger.models.HttpMethod;
 import io.swagger.models.Operation;

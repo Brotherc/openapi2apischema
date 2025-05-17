@@ -1,4 +1,4 @@
-package com.github.brotherc.openapi2apischema.model;
+package com.github.openapi2apischema.core.model;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;

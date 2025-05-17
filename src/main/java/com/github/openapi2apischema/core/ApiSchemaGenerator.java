@@ -1,12 +1,12 @@
-package com.github.brotherc.openapi2apischema;
+package com.github.openapi2apischema.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.github.brotherc.openapi2apischema.constant.ApiSchemaConstant;
-import com.github.brotherc.openapi2apischema.enums.OpenApiVersion;
-import com.github.brotherc.openapi2apischema.enums.ParameterType;
-import com.github.brotherc.openapi2apischema.model.*;
+import com.github.openapi2apischema.core.constant.ApiSchemaConstant;
+import com.github.openapi2apischema.core.enums.OpenApiVersion;
+import com.github.openapi2apischema.core.enums.ParameterType;
+import com.github.openapi2apischema.core.model.*;
 import io.swagger.models.*;
 import io.swagger.models.auth.AuthorizationValue;
 import io.swagger.models.parameters.AbstractSerializableParameter;

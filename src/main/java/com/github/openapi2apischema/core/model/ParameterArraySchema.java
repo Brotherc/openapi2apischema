@@ -1,4 +1,4 @@
-package com.github.brotherc.openapi2apischema.model;
+package com.github.openapi2apischema.core.model;
 
 public class ParameterArraySchema extends ParameterSchema {
 

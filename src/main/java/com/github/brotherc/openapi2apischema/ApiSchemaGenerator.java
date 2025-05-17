@@ -2,6 +2,8 @@ package com.github.brotherc.openapi2apischema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.brotherc.openapi2apischema.constant.ApiSchemaConstant;
 import com.github.brotherc.openapi2apischema.enums.OpenApiVersion;
 import com.github.brotherc.openapi2apischema.enums.ParameterType;
 import com.github.brotherc.openapi2apischema.model.*;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class ApiSchemaGenerator {
 
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    public static final ObjectMapper objectMapper = new ObjectMapper();
 
     private ApiSchemaGenerator() {
     }
@@ -102,8 +104,13 @@ public class ApiSchemaGenerator {
             apiSchema.setTags(operation.getTags());
             apiSchema.setConsumes(operation.getConsumes());
 
-            apiSchema.setParameters(parseParameters(operation.getParameters(), swagger).getParameterSchemaList());
-            apiSchema.setResponses(parseResponses(operation.getResponses(), swagger).getParameterSchema());
+            ParameterSchemaHolder parameterSchemaHolder = parseParameters(operation.getParameters(), swagger);
+            apiSchema.setParameters(parameterSchemaHolder.getParameterSchemaList());
+            apiSchema.setDisplayParameters(parameterSchemaHolder.getDisplaySchemaList());
+
+            parameterSchemaHolder = parseResponses(operation.getResponses(), swagger);
+            apiSchema.setResponses(parameterSchemaHolder.getParameterSchema());
+            apiSchema.setDisplayResponses(parameterSchemaHolder.getDisplaySchema());
 
             return apiSchema;
         }).collect(Collectors.toList());
@@ -118,8 +125,12 @@ public class ApiSchemaGenerator {
         ArrayNode displaySchemaList = objectMapper.createArrayNode();
         for (Parameter parameter : parameterList) {
             ParameterSchemaHolder parameterSchemaHolder = transformParameter(parameter, swagger);
-            parameterSchemaList.add(parameterSchemaHolder.getParameterSchema());
-            displaySchemaList.add(parameterSchemaHolder.getDisplaySchema());
+            if (parameterSchemaHolder.getParameterSchema() != null) {
+                parameterSchemaList.add(parameterSchemaHolder.getParameterSchema());
+            }
+            if (parameterSchemaHolder.getDisplaySchema() != null) {
+                displaySchemaList.add(parameterSchemaHolder.getDisplaySchema());
+            }
         }
 
         ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
@@ -130,7 +141,8 @@ public class ApiSchemaGenerator {
     }
 
     private static ParameterSchemaHolder transformParameter(Parameter parameter, Swagger swagger) {
-        ParameterSchema parameterSchema = new ParameterSchema();
+        ParameterSchema parameterSchema = null;
+        ObjectNode displaySchema = null;
 
         if (parameter instanceof AbstractSerializableParameter) {
             AbstractSerializableParameter serializableParameter = (AbstractSerializableParameter) parameter;
@@ -145,10 +157,14 @@ public class ApiSchemaGenerator {
                 parameterArraySchema.setRequired(parameter.getRequired());
                 parameterArraySchema.setType(ParameterType.ARRAY.getDisplayName());
                 parameterArraySchema.setExample(serializableParameter.getExample());
+
+                displaySchema = parameterArraySchema.toJsonNode();
+
                 if (!ParameterType.isStructDataType(parameterType)) {
                     ParameterSchema itemsSchema = new ParameterSchema();
                     itemsSchema.setType(parameterType.getDisplayName());
                     parameterArraySchema.setItems(itemsSchema);
+                    displaySchema.put(ApiSchemaConstant.TYPE, parameterArraySchema.getType() + "[" + parameterType.getDisplayName() + "]");
                 } else {
                     // TODO
                     System.out.println("AbstractSerializableParameter数组中是结构体");
@@ -165,6 +181,8 @@ public class ApiSchemaGenerator {
                         .map(ParameterType::getDisplayName)
                         .orElse("");
                 parameterSchema.setType(typeName);
+
+                displaySchema = parameterSchema.toJsonNode();
             }
         } else if (parameter instanceof RefParameter) {
             RefParameter refParameter = (RefParameter) parameter;
@@ -181,6 +199,10 @@ public class ApiSchemaGenerator {
                 parameterSchema.setIn(parameter.getIn());
                 parameterSchema.setDescription(parameter.getDescription());
                 parameterSchema.setRequired(parameter.getRequired());
+                displaySchema = parameterSchemaHolder.getDisplaySchema();
+                displaySchema.put(ApiSchemaConstant.IN, parameter.getIn());
+                displaySchema.put(ApiSchemaConstant.DESCRIPTION, parameter.getDescription());
+                displaySchema.put(ApiSchemaConstant.REQUIRED, parameter.getRequired());
             } else if (schema instanceof BooleanValueModel) {
                 // TODO
                 System.out.println("BodyParameter BooleanValueModel");
@@ -192,6 +214,7 @@ public class ApiSchemaGenerator {
 
         ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
         parameterSchemaHolder.setParameterSchema(parameterSchema);
+        parameterSchemaHolder.setDisplaySchema(displaySchema);
         return parameterSchemaHolder;
     }
 
@@ -204,12 +227,26 @@ public class ApiSchemaGenerator {
         parameterSchema.setRequired(property.getRequired());
         parameterSchema.setDescription(property.getDescription());
         parameterSchema.setExample(property.getExample());
+
+        ObjectNode displaySchema = parameterSchema.toJsonNode();
+
         if (ParameterType.isStructDataType(parameterType)) {
             if (property instanceof ArrayProperty) {
                 ParameterArraySchema parameterArraySchema = ParameterArraySchema.of(parameterSchema);
                 ParameterSchemaHolder parameterSchemaHolder = parseProperties(swagger, null, ((ArrayProperty) property).getItems(), parsedRefProperty);
                 parameterArraySchema.setItems(parameterSchemaHolder.getParameterSchema());
                 parameterSchema = parameterArraySchema;
+
+                String type = parameterSchemaHolder.getParameterSchema().getType();
+                if (parameterSchemaHolder.getParameterSchema() instanceof ParameterArraySchema) {
+                    displaySchema.set(ApiSchemaConstant.CHILDREN, parameterSchemaHolder.getDisplaySchema());
+                } else if (parameterSchemaHolder.getParameterSchema() instanceof ParameterObjectSchema) {
+                    displaySchema.put(ApiSchemaConstant.TYPE, parameterArraySchema.getType() + "[" + type + "]");
+                    displaySchema.set(ApiSchemaConstant.CHILDREN, parameterSchemaHolder.getDisplaySchema().get(ApiSchemaConstant.CHILDREN));
+                } else {
+                    displaySchema.put(ApiSchemaConstant.TYPE, parameterArraySchema.getType() + "[" + type + "]");
+                }
+
             } else if (property instanceof RefProperty || property instanceof ObjectProperty) {
                 ParameterObjectSchema parameterObjectSchema = ParameterObjectSchema.of(parameterSchema);
 
@@ -226,6 +263,7 @@ public class ApiSchemaGenerator {
                         parsedRefProperty.get(simpleRef).setType(simpleRef);
                         ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
                         parameterSchemaHolder.setParameterSchema(parameterObjectSchema);
+                        parameterSchemaHolder.setDisplaySchema(parameterObjectSchema.toJsonNode());
                         return parameterSchemaHolder;
                     } else {
                         parsedRefProperty.put(simpleRef, parameterObjectSchema);
@@ -236,11 +274,14 @@ public class ApiSchemaGenerator {
 
                 if (properties != null && !properties.isEmpty()) {
                     List<ParameterSchema> parameterSchemaList = new ArrayList<>();
+                    ArrayNode displaySchemaList = objectMapper.createArrayNode();
                     for (Map.Entry<String, Property> entry : properties.entrySet()) {
                         ParameterSchemaHolder parameterSchemaHolder = parseProperties(swagger, entry.getKey(), entry.getValue(), parsedRefProperty);
                         parameterSchemaList.add(parameterSchemaHolder.getParameterSchema());
+                        displaySchemaList.add(parameterSchemaHolder.getDisplaySchema());
                     }
                     parameterObjectSchema.setProperties(parameterSchemaList);
+                    displaySchema.set(ApiSchemaConstant.CHILDREN, displaySchemaList);
                 }
                 if (simpleRef != null) {
                     parsedRefProperty.remove(simpleRef);
@@ -251,6 +292,7 @@ public class ApiSchemaGenerator {
 
         ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
         parameterSchemaHolder.setParameterSchema(parameterSchema);
+        parameterSchemaHolder.setDisplaySchema(displaySchema);
         return parameterSchemaHolder;
     }
 

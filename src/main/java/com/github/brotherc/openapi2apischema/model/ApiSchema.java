@@ -1,5 +1,8 @@
 package com.github.brotherc.openapi2apischema.model;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import java.util.List;
 
 public class ApiSchema {
@@ -24,7 +27,11 @@ public class ApiSchema {
 
     private List<ParameterSchema> parameters;
 
+    private ArrayNode displayParameters;
+
     private ParameterSchema responses;
+
+    private ObjectNode displayResponses;
 
     public String getMethod() {
         return method;
@@ -106,12 +113,28 @@ public class ApiSchema {
         this.parameters = parameters;
     }
 
+    public ArrayNode getDisplayParameters() {
+        return displayParameters;
+    }
+
+    public void setDisplayParameters(ArrayNode displayParameters) {
+        this.displayParameters = displayParameters;
+    }
+
     public ParameterSchema getResponses() {
         return responses;
     }
 
     public void setResponses(ParameterSchema responses) {
         this.responses = responses;
+    }
+
+    public ObjectNode getDisplayResponses() {
+        return displayResponses;
+    }
+
+    public void setDisplayResponses(ObjectNode displayResponses) {
+        this.displayResponses = displayResponses;
     }
 
 }

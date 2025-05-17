@@ -1,5 +1,8 @@
 package com.github.brotherc.openapi2apischema.model;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.brotherc.openapi2apischema.ApiSchemaGenerator;
+
 public class ParameterSchema {
 
     private String name;
@@ -8,7 +11,7 @@ public class ParameterSchema {
 
     private String description;
 
-    private boolean required;
+    private Boolean required;
 
     private String type;
 
@@ -38,11 +41,11 @@ public class ParameterSchema {
         this.description = description;
     }
 
-    public boolean isRequired() {
+    public Boolean isRequired() {
         return required;
     }
 
-    public void setRequired(boolean required) {
+    public void setRequired(Boolean required) {
         this.required = required;
     }
 
@@ -60,6 +63,29 @@ public class ParameterSchema {
 
     public void setExample(Object example) {
         this.example = example;
+    }
+
+    public ObjectNode toJsonNode() {
+        ObjectNode objectNode = ApiSchemaGenerator.objectMapper.createObjectNode();
+        if (name != null) {
+            objectNode.put("name", name);
+        }
+        if (in != null) {
+            objectNode.put("in", in);
+        }
+        if (description != null) {
+            objectNode.put("description", description);
+        }
+        if (required != null) {
+            objectNode.put("required", required);
+        }
+        if (type != null) {
+            objectNode.put("type", type);
+        }
+        if (example != null) {
+            objectNode.putPOJO("example", example);
+        }
+        return objectNode;
     }
 
 }

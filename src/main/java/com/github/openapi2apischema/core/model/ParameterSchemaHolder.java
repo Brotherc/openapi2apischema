@@ -1,14 +1,14 @@
 package com.github.openapi2apischema.core.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.List;
 
 public class ParameterSchemaHolder {
 
     private ParameterSchema parameterSchema;
-    private ObjectNode displaySchema;
+    private JsonNode displaySchema;
 
     private List<ParameterSchema> parameterSchemaList;
     private ArrayNode displaySchemaList;
@@ -20,7 +20,7 @@ public class ParameterSchemaHolder {
         return parameterSchema;
     }
 
-    public ParameterSchemaHolder(ParameterSchema parameterSchema, ObjectNode displaySchema) {
+    public ParameterSchemaHolder(ParameterSchema parameterSchema, JsonNode displaySchema) {
         this.parameterSchema = parameterSchema;
         this.displaySchema = displaySchema;
     }
@@ -29,11 +29,11 @@ public class ParameterSchemaHolder {
         this.parameterSchema = parameterSchema;
     }
 
-    public ObjectNode getDisplaySchema() {
+    public JsonNode getDisplaySchema() {
         return displaySchema;
     }
 
-    public void setDisplaySchema(ObjectNode displaySchema) {
+    public void setDisplaySchema(JsonNode displaySchema) {
         this.displaySchema = displaySchema;
     }
 

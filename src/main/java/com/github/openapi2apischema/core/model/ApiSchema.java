@@ -1,7 +1,7 @@
 package com.github.openapi2apischema.core.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.List;
 
@@ -31,7 +31,7 @@ public class ApiSchema {
 
     private ParameterSchema responses;
 
-    private ObjectNode displayResponses;
+    private JsonNode displayResponses;
 
     public String getMethod() {
         return method;
@@ -129,11 +129,11 @@ public class ApiSchema {
         this.responses = responses;
     }
 
-    public ObjectNode getDisplayResponses() {
+    public JsonNode getDisplayResponses() {
         return displayResponses;
     }
 
-    public void setDisplayResponses(ObjectNode displayResponses) {
+    public void setDisplayResponses(JsonNode displayResponses) {
         this.displayResponses = displayResponses;
     }
 

@@ -199,7 +199,7 @@ public class ApiSchemaGenerator {
                 parameterSchema.setIn(parameter.getIn());
                 parameterSchema.setDescription(parameter.getDescription());
                 parameterSchema.setRequired(parameter.getRequired());
-                displaySchema = parameterSchemaHolder.getDisplaySchema();
+                displaySchema = (ObjectNode) parameterSchemaHolder.getDisplaySchema();
                 displaySchema.put(ApiSchemaConstant.IN, parameter.getIn());
                 displaySchema.put(ApiSchemaConstant.DESCRIPTION, parameter.getDescription());
                 displaySchema.put(ApiSchemaConstant.REQUIRED, parameter.getRequired());

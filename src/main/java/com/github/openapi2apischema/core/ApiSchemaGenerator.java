@@ -309,7 +309,15 @@ public class ApiSchemaGenerator {
             return new ParameterSchemaHolder();
         }
         Property property = new PropertyModelConverter().modelToProperty(responseSchema);
-        return parseProperties(swagger, property.getName(), property, new HashMap<>());
+        ParameterSchemaHolder parameterSchemaHolder = parseProperties(swagger, property.getName(), property, new HashMap<>());
+
+        if (parameterSchemaHolder.getDisplaySchema() != null) {
+            ArrayNode arrayNode = objectMapper.createArrayNode();
+            arrayNode.add(parameterSchemaHolder.getDisplaySchema());
+            parameterSchemaHolder.setDisplaySchema(arrayNode);
+        }
+
+        return parameterSchemaHolder;
     }
 
     private static List<ApiSchema> parse20(Swagger read) {

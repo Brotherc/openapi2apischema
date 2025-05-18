@@ -72,7 +72,7 @@ public class ApiSchemaGenerator {
                 HttpMethod httpMethod = operationEntry.getKey();
                 Operation operation = operationEntry.getValue();
 
-                String code = String.join("_", path, httpMethod.name());
+                String code = String.join("_", path, httpMethod.name().toLowerCase());
                 SwaggerOperationHolder operationHolder = new SwaggerOperationHolder(entry.getKey(), httpMethod, operation);
                 operationMapping.put(code, operationHolder);
             }
@@ -283,8 +283,11 @@ public class ApiSchemaGenerator {
                     parameterObjectSchema.setProperties(parameterSchemaList);
                     displaySchema.set(ApiSchemaConstant.CHILDREN, displaySchemaList);
                 }
-                if (simpleRef != null) {
+                if (simpleRef != null && parsedRefProperty.containsKey(simpleRef)) {
                     parsedRefProperty.remove(simpleRef);
+                    // 当出现循环依赖的对象结构时，将用于展示的类型重新设置为依赖的对象类型
+                    // 因为parameterObjectSchema在处理循环依赖过程中已经重新设置过了，所以displaySchema直接取parameterObjectSchema的类型即可
+                    displaySchema.put(ApiSchemaConstant.TYPE, parameterObjectSchema.getType());
                 }
                 parameterSchema = parameterObjectSchema;
             }

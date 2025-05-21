@@ -1,7 +1,5 @@
 package com.github.openapi2apischema.core.enums;
 
-import io.swagger.models.properties.*;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -63,42 +61,6 @@ public enum ParameterType {
             }
         }
         return null;
-    }
-
-    public static ParameterType getParameterType(Property property) {
-        if (property instanceof ArrayProperty) {
-            return ARRAY;
-        } else if (property instanceof BinaryProperty) {
-            return BINARY;
-        } else if (property instanceof BooleanProperty || property instanceof BooleanValueProperty) {
-            return BOOLEAN;
-        } else if (property instanceof ByteArrayProperty) {
-            return BYTE;
-        } else if (property instanceof ComposedProperty || property instanceof MapProperty ||
-                property instanceof ObjectProperty || property instanceof RefProperty) {
-            return OBJECT;
-        } else if (property instanceof DateProperty) {
-            return DATE;
-        } else if (property instanceof DateTimeProperty) {
-            return DATETIME;
-        } else if (property instanceof FloatProperty) {
-            return FLOAT;
-        } else if (property instanceof DoubleProperty) {
-            return DOUBLE;
-        } else if (property instanceof DecimalProperty) {
-            return NUMBER;
-        } else if (property instanceof PasswordProperty || property instanceof StringProperty ||
-                property instanceof UUIDProperty) {
-            return STRING;
-        } else if (property instanceof FileProperty) {
-            return FILE;
-        } else if (property instanceof IntegerProperty) {
-            return INTEGER;
-        } else if (property instanceof LongProperty) {
-            return LONG;
-        } else {
-            return null;
-        }
     }
 
     public static boolean isStructDataType(ParameterType parameterType) {

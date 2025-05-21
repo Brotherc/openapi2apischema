@@ -150,7 +150,8 @@ public class ApiSchemaGenerator {
             String format = serializableParameter.getFormat();
             if (ArrayProperty.TYPE.equals(type)) {
                 ParameterArraySchema parameterArraySchema = new ParameterArraySchema();
-                ParameterType parameterType = ParameterType.getParameterType(serializableParameter.getItems());
+                ParameterType parameterType = ParameterType.getParameterType(
+                        serializableParameter.getItems().getType(), serializableParameter.getItems().getFormat());
                 parameterArraySchema.setName(parameter.getName());
                 parameterArraySchema.setIn(parameter.getIn());
                 parameterArraySchema.setDescription(parameter.getDescription());
@@ -162,9 +163,10 @@ public class ApiSchemaGenerator {
 
                 if (!ParameterType.isStructDataType(parameterType)) {
                     ParameterSchema itemsSchema = new ParameterSchema();
-                    itemsSchema.setType(parameterType.getDisplayName());
+                    String typeDisplayName = parameterType != null ? parameterType.getDisplayName() : "";
+                    itemsSchema.setType(typeDisplayName);
                     parameterArraySchema.setItems(itemsSchema);
-                    displaySchema.put(ApiSchemaConstant.TYPE, parameterArraySchema.getType() + "[" + parameterType.getDisplayName() + "]");
+                    displaySchema.put(ApiSchemaConstant.TYPE, parameterArraySchema.getType() + "[" + typeDisplayName + "]");
                 } else {
                     // TODO
                     System.out.println("AbstractSerializableParameter数组中是结构体");
@@ -221,9 +223,10 @@ public class ApiSchemaGenerator {
     private static ParameterSchemaHolder parseProperties(
             Swagger swagger, String name, Property property, Map<String, ParameterSchema> parsedRefProperty) {
         ParameterSchema parameterSchema = new ParameterSchema();
-        ParameterType parameterType = ParameterType.getParameterType(property);
+        ParameterType parameterType = ParameterType.getParameterType(property.getType(), property.getFormat());
         parameterSchema.setName(name);
-        parameterSchema.setType(parameterType.getDisplayName());
+        String typeDisplayName = parameterType != null ? parameterType.getDisplayName() : "";
+        parameterSchema.setType(typeDisplayName);
         parameterSchema.setRequired(property.getRequired());
         parameterSchema.setDescription(property.getDescription());
         parameterSchema.setExample(property.getExample());

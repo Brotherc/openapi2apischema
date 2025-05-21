@@ -18,7 +18,7 @@ public class TestMain {
 
     public static void main(String[] args) throws IOException {
         for (String url : swaggerUrl) {
-            List<ApiSchema> apiSchemas = ApiSchemaGenerator.generateBySwaggerUrl(OpenApiVersion.V1, url, null);
+            List<ApiSchema> apiSchemas = ApiSchemaGenerator.generateBySwaggerUrl(OpenApiVersion.V2, url, null);
             System.out.println(new ObjectMapper().writeValueAsString(apiSchemas));
         }
     }

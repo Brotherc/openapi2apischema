@@ -55,7 +55,8 @@ public class TestMain {
 ## 示例
 ### 后端
 如果需要在springboot项目中使用，并结合前端组件进行展示，可以参考下面代码。用户同样需要先将`init()`方法中的OpenAPI接口文档地址替换为实际地址，接着启动应用。  
-应用会在启动过程中调用通过`ApiSchemaGenerator`解析出OpenAPI文档中的接口信息，并转换为`ApiSchema`，最终按tag分租保存在Map中。完整的后端工程代码示例，请查看[后端工程](openapi2apischema-demo)
+
+应用会在启动过程中调用通过`ApiSchemaGenerator`解析出OpenAPI文档中的接口信息，并转换为`ApiSchema`，最终按tag分租保存在Map中。完整的后端工程代码示例，请查看[openapi2apischema-demo](openapi2apischema-demo)
 
 ```java
 import com.github.openapi2apischema.core.ApiSchemaGenerator;
@@ -130,7 +131,7 @@ public class ApiSchemaController {
 }
 ```
 ### 前端
-前端代码此处省略，完整工程请查看[前端工程](openapi2apischema-demo/src/main/resources/web)，前端工程可通过`npm run dev`启动，访问http://localhost:3000即可
+前端代码此处省略，完整工程请查看[web](openapi2apischema-demo/src/main/resources/web)，前端工程可通过`npm run dev`启动，访问http://localhost:3000即可
 
 ### 运行效果
 ![image](docs/preview/tags.png)  

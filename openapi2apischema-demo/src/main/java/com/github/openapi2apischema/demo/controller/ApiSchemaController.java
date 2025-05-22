@@ -26,7 +26,7 @@ public class ApiSchemaController {
     @PostConstruct
     public void init() throws IOException {
         List<ApiSchema> apiSchemas = ApiSchemaGenerator.generateBySwaggerUrl(
-                OpenApiVersion.V1, "https://xxx/v2/api-docs", null);
+                OpenApiVersion.V2, "https://xxx/v2/api-docs", null);
         if (!CollectionUtils.isEmpty(apiSchemas)) {
             apiMapping = apiSchemas.stream().collect(Collectors.groupingBy(o -> o.getTags().get(0)));
         } else {

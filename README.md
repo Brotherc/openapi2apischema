@@ -5,11 +5,15 @@
 ![GitHub License](https://img.shields.io/github/license/brotherc/openapi2apischema)
 ![Static Badge](https://img.shields.io/badge/jdk-%3E%3D1.8-green)
 
+<br>
+
 ## 项目介绍
 
 OpenAPI to APISchema 是一个基于JDK1.8开发的OpenAPI文档转换工具。目前支持将符合OpenAPI2.0（原swagger2.0）、3.0规范的文档，转换成自定义的结构化格式`ApiSchema`。  
 
 该结构主要运用在企业级的开放平台API文档中，可用于前端组件展示或后端对Api进行结构校验或调用时进行属性赋值。
+
+<br>
 
 ## 快速开始
 
@@ -51,6 +55,8 @@ public class TestMain {
 
 }
 ```
+
+<br>
 
 ## 示例
 ### 后端
@@ -138,6 +144,8 @@ public class ApiSchemaController {
 ![image](docs/preview/apiList.png)  
 ![image](docs/preview/get.png)  
 ![image](docs/preview/post.png)
+
+<br>
 
 ## 致谢
 

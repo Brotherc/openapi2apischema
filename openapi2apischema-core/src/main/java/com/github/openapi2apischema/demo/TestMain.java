@@ -13,7 +13,7 @@ public class TestMain {
 
     // 替换为实际的swagger接口地址
     private static final List<String> swaggerUrl = Arrays.asList(
-            "https://xxxx/v2/api-docs"
+            "https://pre-mobile.utyun.com/auth-enterprise/v2/api-docs"
     );
 
     public static void main(String[] args) throws IOException {

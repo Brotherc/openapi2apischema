@@ -6,11 +6,15 @@ openapi2apischema 是一个基于JDK1.8开发的OpenAPI文档转换工具
 ![Static Badge](https://img.shields.io/badge/jdk-%3E%3D1.8-green)
 
 ## 项目介绍
-openapi2apischema 是一个基于JDK1.8开发的OpenAPI文档转换工具。目前支持将符合OpenAPI2.0规范（后续将支持OpenAPI3.0）的文档（即json文件）或访问url中的接口信息，转换成结构化格式`ApiSchema`。  
-可用于前端组件展示或后端识别校验，例如应用在企业级的开放平台API文档中。  
+
+openapi2apischema 是一个基于JDK1.8开发的OpenAPI文档转换工具。目前支持将符合OpenAPI2.0规范（后续将支持OpenAPI3.0）的文档（即json文件）或访问url中的接口信息，转换成结构化格式
+`ApiSchema`。  
+可用于前端组件展示或后端识别校验，例如应用在企业级的开放平台API文档中。
 
 ## 快速开始
+
 1. 添加Mavne依赖，建议使用最新的release版本
+
 ```xml
 <dependency>
     <groupId>com.github.openapi2apischema</groupId>
@@ -18,7 +22,10 @@ openapi2apischema 是一个基于JDK1.8开发的OpenAPI文档转换工具。目�
     <version>1.0.0</version>
 </dependency>
 ```
-2. 使用下面的Java代码，并替换为实际的OpenAPI接口文档地址，代码最终会输出解析OpenAPI文档得到的所有接口信息，格式为`ApiSchema`
+
+2. 使用下面的Java代码，并替换为实际的OpenAPI接口文档地址，代码最终会输出解析OpenAPI文档得到的所有接口信息，格式为
+   `ApiSchema`
+
 ```java
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.openapi2apischema.core.ApiSchemaGenerator;
@@ -45,8 +52,12 @@ public class TestMain {
 
 }
 ```
+
 ## 示例
-如果需要在springboot项目中使用，并结合前端组件进行展示，可以参考下面代码。应用会在启动过程中调用通过`ApiSchemaGenerator`解析出OpenAPI文档中的接口信息，并转换为`ApiSchema`，最终按tag分租保存在Map中
+
+如果需要在springboot项目中使用，并结合前端组件进行展示，可以参考下面代码。应用会在启动过程中调用通过`ApiSchemaGenerator`
+解析出OpenAPI文档中的接口信息，并转换为`ApiSchema`，最终按tag分租保存在Map中
+
 ```java
 import com.github.openapi2apischema.core.ApiSchemaGenerator;
 import com.github.openapi2apischema.core.enums.OpenApiVersion;
@@ -119,17 +130,18 @@ public class ApiSchemaController {
 
 }
 ```
+
 完整的后端工程代码示例，请查看[backend]()  
-前端代码此处省略，完整工程请查看[front]()，前端工程可通过`npm run dev`启动，访问http://localhost:3000  
+前端代码此处省略，完整工程请查看[front]()，前端工程可通过`npm run dev`启动，访问http://localhost:3000
 
 运行效果如下：
 ![image](docs/preview/tags.png)  
 ![image](docs/preview/apiList.png)  
 ![image](docs/preview/get.png)  
-![image](docs/preview/post.png)  
-
+![image](docs/preview/post.png)
 
 ## 致谢
+
 以下开源项目对本项目的开发提供了帮助或启发，谨致谢意：
 
 - **[swagger-parser](https://github.com/swagger-api/swagger-parser)**  

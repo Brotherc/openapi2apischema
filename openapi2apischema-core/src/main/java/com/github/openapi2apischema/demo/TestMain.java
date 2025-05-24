@@ -11,11 +11,12 @@ import java.util.List;
 
 public class TestMain {
 
-    // 替换为实际的swagger接口地址
+    // 替换为实际的swagger2.0接口地址
     private static final List<String> swaggerUrl = Arrays.asList(
             "http://xxx/v2/api-docs"
     );
 
+    // 替换为实际的swagger3.0接口地址
     private static final List<String> swaggerUrlV3 = Arrays.asList(
             "http://xxx/v3/api-docs"
     );

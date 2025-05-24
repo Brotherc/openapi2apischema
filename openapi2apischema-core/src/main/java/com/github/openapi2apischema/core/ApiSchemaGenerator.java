@@ -26,9 +26,7 @@ public class ApiSchemaGenerator {
         if (OpenApiVersion.V2.equals(openApiVersion)) {
             return ApiParser.parse(new Swagger20Parser().read(swaggerUrl, auths));
         } else if (OpenApiVersion.V3.equals(openApiVersion)) {
-            ParseOptions parseOptions = new ParseOptions();
-            parseOptions.setResolveFully(true);
-            OpenAPI openAPI = new OpenAPIV3Parser().read(swaggerUrl, null, parseOptions);
+            OpenAPI openAPI = new OpenAPIV3Parser().read(swaggerUrl, null, null);
             return ApiV3Parser.parse(openAPI);
         }
         return Collections.emptyList();

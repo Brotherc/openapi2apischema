@@ -8,10 +8,7 @@ import com.github.openapi2apischema.core.enums.ParameterType;
 import com.github.openapi2apischema.core.model.*;
 import com.github.openapi2apischema.core.model.v3.SwaggerOperationV3Holder;
 import io.swagger.models.HttpMethod;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.Paths;
+import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
@@ -120,11 +117,11 @@ public class ApiV3Parser {
                     .orElse(null);
             apiSchema.setConsumes(consumes);
 
-            ParameterSchemaHolder parameterSchemaHolder = parseParameters(operation);
+            ParameterSchemaHolder parameterSchemaHolder = parseParameters(operation, openAPI);
             apiSchema.setParameters(parameterSchemaHolder.getParameterSchemaList());
             apiSchema.setDisplayParameters(parameterSchemaHolder.getDisplaySchemaList());
 
-            parameterSchemaHolder = parseResponses(operation.getResponses());
+            parameterSchemaHolder = parseResponses(operation.getResponses(), openAPI);
             apiSchema.setResponses(parameterSchemaHolder.getParameterSchema());
             apiSchema.setDisplayResponses(parameterSchemaHolder.getDisplaySchema());
 
@@ -132,7 +129,7 @@ public class ApiV3Parser {
         }).collect(Collectors.toList());
     }
 
-    private static ParameterSchemaHolder parseParameters(Operation operation) {
+    private static ParameterSchemaHolder parseParameters(Operation operation, OpenAPI openAPI) {
         List<Parameter> parameters = operation.getParameters();
         RequestBody requestBody = operation.getRequestBody();
 
@@ -155,7 +152,7 @@ public class ApiV3Parser {
         }
 
         if (requestBody != null) {
-            ParameterSchemaHolder parameterSchemaHolder = transformBody(requestBody);
+            ParameterSchemaHolder parameterSchemaHolder = transformBody(requestBody, openAPI);
             if (parameterSchemaHolder.getParameterSchema() != null) {
                 parameterSchemaList.add(parameterSchemaHolder.getParameterSchema());
             }
@@ -220,14 +217,14 @@ public class ApiV3Parser {
         return parameterSchemaHolder;
     }
 
-    private static ParameterSchemaHolder transformBody(RequestBody requestBody) {
+    private static ParameterSchemaHolder transformBody(RequestBody requestBody, OpenAPI openAPI) {
         Optional<MediaType> optional = requestBody.getContent().values().stream().findFirst();
 
         if (optional.isPresent()) {
             Schema schema = optional.get().getSchema();
 
             String name;
-            if (schema instanceof ObjectSchema) {
+            if (schema instanceof ObjectSchema || schema.get$ref() != null) {
                 name = "obj";
             } else if (schema instanceof ArraySchema) {
                 name = "arr";
@@ -235,7 +232,7 @@ public class ApiV3Parser {
                 name = "param";
             }
 
-            ParameterSchemaHolder parameterSchemaHolder = parseSchema(name, schema, requestBody.getRequired());
+            ParameterSchemaHolder parameterSchemaHolder = parseSchema(openAPI, name, schema, requestBody.getRequired(), new HashMap<>());
             ParameterSchema parameterSchema = parameterSchemaHolder.getParameterSchema();
             parameterSchema.setIn("body");
             ObjectNode displaySchema = (ObjectNode) parameterSchemaHolder.getDisplaySchema();
@@ -246,7 +243,8 @@ public class ApiV3Parser {
         return new ParameterSchemaHolder();
     }
 
-    private static ParameterSchemaHolder parseSchema(String name, Schema schema, boolean required) {
+    private static ParameterSchemaHolder parseSchema(
+            OpenAPI openAPI, String name, Schema schema, boolean required, Map<String, ParameterSchema> parsedObjectSchema) {
         ParameterSchema parameterSchema = new ParameterSchema();
         parameterSchema.setName(name);
         String typeName = Optional.ofNullable(ParameterType.getParameterType(schema.getType(), schema.getFormat()))
@@ -262,7 +260,7 @@ public class ApiV3Parser {
         List<String> requiredList = Optional.ofNullable(schema.getRequired()).orElse(new ArrayList<>());
         if (schema instanceof ArraySchema) {
             ParameterArraySchema parameterArraySchema = ParameterArraySchema.of(parameterSchema);
-            ParameterSchemaHolder parameterSchemaHolder = parseSchema(null, schema.getItems(), false);
+            ParameterSchemaHolder parameterSchemaHolder = parseSchema(openAPI, null, schema.getItems(), false, parsedObjectSchema);
             parameterArraySchema.setItems(parameterSchemaHolder.getParameterSchema());
             parameterSchema = parameterArraySchema;
 
@@ -276,20 +274,51 @@ public class ApiV3Parser {
                 displaySchema.put(ApiSchemaConstant.TYPE, parameterArraySchema.getType() + "[" + type + "]");
             }
 
-        } else if (schema instanceof ObjectSchema) {
+        } else if (schema.get$ref() != null || schema instanceof ObjectSchema) {
             ParameterObjectSchema parameterObjectSchema = ParameterObjectSchema.of(parameterSchema);
 
-            Map<String, Schema> properties = schema.getProperties();
+            Map<String, Schema> properties;
+            String refFullName = schema.get$ref();
+            if (refFullName != null) {
+                Map<String, Schema> componentsSchemas = openAPI.getComponents().getSchemas();
+                String[] refFullNameArr = refFullName.split("/");
+                String refName = refFullNameArr[refFullNameArr.length - 1];
+                Schema actualSchema = componentsSchemas.get(refName);
+                properties = actualSchema.getProperties();
+
+                if (parsedObjectSchema.containsKey(refFullName)) {
+                    parameterObjectSchema.setType(refName);
+                    parsedObjectSchema.get(refFullName).setType(refName);
+                    ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
+                    parameterSchemaHolder.setParameterSchema(parameterObjectSchema);
+                    parameterSchemaHolder.setDisplaySchema(parameterObjectSchema.toJsonNode());
+                    return parameterSchemaHolder;
+                } else {
+                    typeName = Optional.ofNullable(ParameterType.getParameterType(actualSchema.getType(), actualSchema.getFormat()))
+                            .map(ParameterType::getDisplayName)
+                            .orElse("");
+                    parameterObjectSchema.setType(typeName);
+                    parsedObjectSchema.put(refFullName, parameterObjectSchema);
+                }
+            } else {
+                properties = schema.getProperties();
+            }
+
             if (properties != null && !properties.isEmpty()) {
                 List<ParameterSchema> parameterSchemaList = new ArrayList<>();
                 ArrayNode displaySchemaList = ApiSchemaGenerator.objectMapper.createArrayNode();
                 for (Map.Entry<String, Schema> entry : properties.entrySet()) {
-                    ParameterSchemaHolder parameterSchemaHolder = parseSchema(entry.getKey(), entry.getValue(), requiredList.contains(entry.getKey()));
+                    ParameterSchemaHolder parameterSchemaHolder = parseSchema(
+                            openAPI, entry.getKey(), entry.getValue(), requiredList.contains(entry.getKey()), parsedObjectSchema);
                     parameterSchemaList.add(parameterSchemaHolder.getParameterSchema());
                     displaySchemaList.add(parameterSchemaHolder.getDisplaySchema());
                 }
                 parameterObjectSchema.setProperties(parameterSchemaList);
                 displaySchema.set(ApiSchemaConstant.CHILDREN, displaySchemaList);
+            }
+            if (refFullName != null && parsedObjectSchema.containsKey(refFullName)) {
+                parsedObjectSchema.remove(refFullName);
+                displaySchema.put(ApiSchemaConstant.TYPE, parameterObjectSchema.getType());
             }
             parameterSchema = parameterObjectSchema;
         }
@@ -300,7 +329,7 @@ public class ApiV3Parser {
         return parameterSchemaHolder;
     }
 
-    private static ParameterSchemaHolder parseResponses(ApiResponses responses) {
+    private static ParameterSchemaHolder parseResponses(ApiResponses responses, OpenAPI openAPI) {
         if (responses == null || responses.isEmpty()) {
             return new ParameterSchemaHolder();
         }
@@ -314,7 +343,7 @@ public class ApiV3Parser {
 
         Schema schema = optional.get().getSchema();
         String name;
-        if (schema instanceof ObjectSchema) {
+        if (schema instanceof ObjectSchema || schema.get$ref() != null) {
             name = "obj";
         } else if (schema instanceof ArraySchema) {
             name = "arr";
@@ -322,7 +351,7 @@ public class ApiV3Parser {
             name = "param";
         }
 
-        ParameterSchemaHolder parameterSchemaHolder = parseSchema(name, schema, false);
+        ParameterSchemaHolder parameterSchemaHolder = parseSchema(openAPI, name, schema, false, new HashMap<>());
 
         if (parameterSchemaHolder.getDisplaySchema() != null) {
             ArrayNode arrayNode = ApiSchemaGenerator.objectMapper.createArrayNode();

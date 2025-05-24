@@ -197,77 +197,81 @@ public class ApiParser {
     private static ParameterSchemaHolder parseProperties(
             Swagger swagger, String name, Property property, Map<String, ParameterSchema> parsedRefProperty) {
         ParameterSchema parameterSchema = new ParameterSchema();
-        ParameterType parameterType = ParameterType.getParameterType(property.getType(), property.getFormat());
         parameterSchema.setName(name);
-        String typeDisplayName = parameterType != null ? parameterType.getDisplayName() : "";
-        parameterSchema.setType(typeDisplayName);
+        String typeName = Optional.ofNullable(ParameterType.getParameterType(property.getType(), property.getFormat()))
+                .map(ParameterType::getDisplayName)
+                .orElse("");
+        parameterSchema.setType(typeName);
         parameterSchema.setRequired(property.getRequired());
         parameterSchema.setDescription(property.getDescription());
         parameterSchema.setExample(property.getExample());
 
         ObjectNode displaySchema = parameterSchema.toJsonNode();
 
-        if (ParameterType.isStructDataType(parameterType)) {
-            if (property instanceof ArrayProperty) {
-                ParameterArraySchema parameterArraySchema = ParameterArraySchema.of(parameterSchema);
-                ParameterSchemaHolder parameterSchemaHolder = parseProperties(swagger, null, ((ArrayProperty) property).getItems(), parsedRefProperty);
-                parameterArraySchema.setItems(parameterSchemaHolder.getParameterSchema());
-                parameterSchema = parameterArraySchema;
+        if (property instanceof ArrayProperty) {
+            ParameterArraySchema parameterArraySchema = ParameterArraySchema.of(parameterSchema);
+            ParameterSchemaHolder parameterSchemaHolder = parseProperties(swagger, null, ((ArrayProperty) property).getItems(), parsedRefProperty);
+            parameterArraySchema.setItems(parameterSchemaHolder.getParameterSchema());
+            parameterSchema = parameterArraySchema;
 
-                String type = parameterSchemaHolder.getParameterSchema().getType();
-                if (parameterSchemaHolder.getParameterSchema() instanceof ParameterArraySchema) {
-                    displaySchema.set(ApiSchemaConstant.CHILDREN, parameterSchemaHolder.getDisplaySchema());
-                } else if (parameterSchemaHolder.getParameterSchema() instanceof ParameterObjectSchema) {
-                    displaySchema.put(ApiSchemaConstant.TYPE, parameterArraySchema.getType() + "[" + type + "]");
-                    displaySchema.set(ApiSchemaConstant.CHILDREN, parameterSchemaHolder.getDisplaySchema().get(ApiSchemaConstant.CHILDREN));
-                } else {
-                    displaySchema.put(ApiSchemaConstant.TYPE, parameterArraySchema.getType() + "[" + type + "]");
-                }
-
-            } else if (property instanceof RefProperty || property instanceof ObjectProperty) {
-                ParameterObjectSchema parameterObjectSchema = ParameterObjectSchema.of(parameterSchema);
-
-                Map<String, Property> properties;
-                String simpleRef = null;
-                if (property instanceof RefProperty) {
-                    Map<String, Model> definitions = swagger.getDefinitions();
-                    Model model = definitions.get(((RefProperty) property).getSimpleRef());
-                    properties = model.getProperties();
-
-                    simpleRef = ((RefProperty) property).getSimpleRef();
-                    if (parsedRefProperty.containsKey(simpleRef)) {
-                        parameterObjectSchema.setType(simpleRef);
-                        parsedRefProperty.get(simpleRef).setType(simpleRef);
-                        ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
-                        parameterSchemaHolder.setParameterSchema(parameterObjectSchema);
-                        parameterSchemaHolder.setDisplaySchema(parameterObjectSchema.toJsonNode());
-                        return parameterSchemaHolder;
-                    } else {
-                        parsedRefProperty.put(simpleRef, parameterObjectSchema);
-                    }
-                } else {
-                    properties = ((ObjectProperty) property).getProperties();
-                }
-
-                if (properties != null && !properties.isEmpty()) {
-                    List<ParameterSchema> parameterSchemaList = new ArrayList<>();
-                    ArrayNode displaySchemaList = ApiSchemaGenerator.objectMapper.createArrayNode();
-                    for (Map.Entry<String, Property> entry : properties.entrySet()) {
-                        ParameterSchemaHolder parameterSchemaHolder = parseProperties(swagger, entry.getKey(), entry.getValue(), parsedRefProperty);
-                        parameterSchemaList.add(parameterSchemaHolder.getParameterSchema());
-                        displaySchemaList.add(parameterSchemaHolder.getDisplaySchema());
-                    }
-                    parameterObjectSchema.setProperties(parameterSchemaList);
-                    displaySchema.set(ApiSchemaConstant.CHILDREN, displaySchemaList);
-                }
-                if (simpleRef != null && parsedRefProperty.containsKey(simpleRef)) {
-                    parsedRefProperty.remove(simpleRef);
-                    // 当出现循环依赖的对象结构时，将用于展示的类型重新设置为依赖的对象类型
-                    // 因为parameterObjectSchema在处理循环依赖过程中已经重新设置过了，所以displaySchema直接取parameterObjectSchema的类型即可
-                    displaySchema.put(ApiSchemaConstant.TYPE, parameterObjectSchema.getType());
-                }
-                parameterSchema = parameterObjectSchema;
+            String type = parameterSchemaHolder.getParameterSchema().getType();
+            if (parameterSchemaHolder.getParameterSchema() instanceof ParameterArraySchema) {
+                displaySchema.set(ApiSchemaConstant.CHILDREN, parameterSchemaHolder.getDisplaySchema());
+            } else if (parameterSchemaHolder.getParameterSchema() instanceof ParameterObjectSchema) {
+                displaySchema.put(ApiSchemaConstant.TYPE, parameterArraySchema.getType() + "[" + type + "]");
+                displaySchema.set(ApiSchemaConstant.CHILDREN, parameterSchemaHolder.getDisplaySchema().get(ApiSchemaConstant.CHILDREN));
+            } else {
+                displaySchema.put(ApiSchemaConstant.TYPE, parameterArraySchema.getType() + "[" + type + "]");
             }
+
+        } else if (property instanceof RefProperty || property instanceof ObjectProperty) {
+            ParameterObjectSchema parameterObjectSchema = ParameterObjectSchema.of(parameterSchema);
+
+            Map<String, Property> properties;
+            String simpleRef = null;
+            if (property instanceof RefProperty) {
+                Map<String, Model> definitions = swagger.getDefinitions();
+                Model model = definitions.get(((RefProperty) property).getSimpleRef());
+                properties = model.getProperties();
+
+                simpleRef = ((RefProperty) property).getSimpleRef();
+                if (parsedRefProperty.containsKey(simpleRef)) {
+                    parameterObjectSchema.setType(simpleRef);
+                    parsedRefProperty.get(simpleRef).setType(simpleRef);
+                    ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
+                    parameterSchemaHolder.setParameterSchema(parameterObjectSchema);
+                    parameterSchemaHolder.setDisplaySchema(parameterObjectSchema.toJsonNode());
+                    return parameterSchemaHolder;
+                } else {
+                    Property p = new PropertyModelConverter().modelToProperty(model);
+                    typeName = Optional.ofNullable(ParameterType.getParameterType(p.getType(), p.getFormat()))
+                            .map(ParameterType::getDisplayName)
+                            .orElse("");
+                    parameterObjectSchema.setType(typeName);
+                    parsedRefProperty.put(simpleRef, parameterObjectSchema);
+                }
+            } else {
+                properties = ((ObjectProperty) property).getProperties();
+            }
+
+            if (properties != null && !properties.isEmpty()) {
+                List<ParameterSchema> parameterSchemaList = new ArrayList<>();
+                ArrayNode displaySchemaList = ApiSchemaGenerator.objectMapper.createArrayNode();
+                for (Map.Entry<String, Property> entry : properties.entrySet()) {
+                    ParameterSchemaHolder parameterSchemaHolder = parseProperties(swagger, entry.getKey(), entry.getValue(), parsedRefProperty);
+                    parameterSchemaList.add(parameterSchemaHolder.getParameterSchema());
+                    displaySchemaList.add(parameterSchemaHolder.getDisplaySchema());
+                }
+                parameterObjectSchema.setProperties(parameterSchemaList);
+                displaySchema.set(ApiSchemaConstant.CHILDREN, displaySchemaList);
+            }
+            if (simpleRef != null && parsedRefProperty.containsKey(simpleRef)) {
+                parsedRefProperty.remove(simpleRef);
+                // 当出现循环依赖的对象结构时，将用于展示的类型重新设置为依赖的对象类型
+                // 因为parameterObjectSchema在处理循环依赖过程中已经重新设置过了，所以displaySchema直接取parameterObjectSchema的类型即可
+                displaySchema.put(ApiSchemaConstant.TYPE, parameterObjectSchema.getType());
+            }
+            parameterSchema = parameterObjectSchema;
         }
 
         ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();

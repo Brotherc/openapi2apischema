@@ -232,6 +232,11 @@ public class ApiParser {
             if (property instanceof RefProperty) {
                 Map<String, Model> definitions = swagger.getDefinitions();
                 Model model = definitions.get(((RefProperty) property).getSimpleRef());
+                // 防止关联的引用名称中包含/，导致无法根据名称正确获取引用对象，所以当取不到引用对象时重新解析名称之后再获取一次
+                if (model == null) {
+                    model = definitions.get(((RefProperty) property).get$ref().replace("#/definitions/", ""));
+                }
+
                 properties = model.getProperties();
 
                 simpleRef = ((RefProperty) property).getSimpleRef();

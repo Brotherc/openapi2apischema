@@ -96,9 +96,10 @@ public class ApiSchemaController {
 
     @PostConstruct
     public void init() throws IOException {
-        // 替换为实际的swagger接口地址
-        List<ApiSchema> apiSchemas = ApiSchemaGenerator.generateBySwaggerUrl(
-                OpenApiVersion.V1, "https://xxx/v2/api-docs", null);
+        // 替换为实际的swagger2.0接口地址
+        List<ApiSchema> apiSchemas = ApiSchemaGenerator.generateBySwaggerUrl(OpenApiVersion.V2, "https://xxx/v2/api-docs", null);
+        // 替换为实际的swagger3.0接口地址
+        // List<ApiSchema> apiSchemas = ApiSchemaGenerator.generateBySwaggerUrl(OpenApiVersion.V3, "https://xxx/v3/api-docs", null);
         if (!CollectionUtils.isEmpty(apiSchemas)) {
             apiMapping = apiSchemas.stream().collect(Collectors.groupingBy(o -> o.getTags().get(0)));
         } else {

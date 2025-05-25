@@ -178,7 +178,7 @@ public class ApiV3Parser {
         if (schema instanceof ArraySchema) {
             ParameterArraySchema parameterArraySchema = new ParameterArraySchema();
             ParameterType parameterType = ParameterType.getParameterType(
-                    schema.getItems().getType(), schema.getItems().getFormat());
+                    schema.getItems().getType(), schema.getItems().getFormat(), schema.getItems());
             parameterArraySchema.setName(parameter.getName());
             parameterArraySchema.setIn(parameter.getIn());
             parameterArraySchema.setDescription(parameter.getDescription());
@@ -206,7 +206,7 @@ public class ApiV3Parser {
             parameterSchema.setDescription(parameter.getDescription());
             parameterSchema.setRequired(parameter.getRequired());
             parameterSchema.setExample(parameter.getExample());
-            String typeName = Optional.ofNullable(ParameterType.getParameterType(schema.getType(), schema.getFormat()))
+            String typeName = Optional.ofNullable(ParameterType.getParameterType(schema.getType(), schema.getFormat(), schema))
                     .map(ParameterType::getDisplayName)
                     .orElse("");
             parameterSchema.setType(typeName);
@@ -254,7 +254,7 @@ public class ApiV3Parser {
             OpenAPI openAPI, String name, Schema schema, boolean required, Map<String, ParameterSchema> parsedObjectSchema) {
         ParameterSchema parameterSchema = new ParameterSchema();
         parameterSchema.setName(name);
-        String typeName = Optional.ofNullable(ParameterType.getParameterType(schema.getType(), schema.getFormat()))
+        String typeName = Optional.ofNullable(ParameterType.getParameterType(schema.getType(), schema.getFormat(), schema))
                 .map(ParameterType::getDisplayName)
                 .orElse("");
         parameterSchema.setType(typeName);
@@ -301,7 +301,7 @@ public class ApiV3Parser {
                     parameterSchemaHolder.setDisplaySchema(parameterObjectSchema.toJsonNode());
                     return parameterSchemaHolder;
                 } else {
-                    typeName = Optional.ofNullable(ParameterType.getParameterType(actualSchema.getType(), actualSchema.getFormat()))
+                    typeName = Optional.ofNullable(ParameterType.getParameterType(actualSchema.getType(), actualSchema.getFormat(), schema))
                             .map(ParameterType::getDisplayName)
                             .orElse("");
                     parameterObjectSchema.setType(typeName);

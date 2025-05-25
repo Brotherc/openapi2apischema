@@ -199,7 +199,7 @@ public class ApiParser {
             Swagger swagger, String name, Property property, Map<String, ParameterSchema> parsedRefProperty) {
         ParameterSchema parameterSchema = new ParameterSchema();
         parameterSchema.setName(name);
-        String typeName = Optional.ofNullable(ParameterType.getParameterType(property.getType(), property.getFormat()))
+        String typeName = Optional.ofNullable(ParameterType.getParameterType(property.getType(), property.getFormat(), property))
                 .map(ParameterType::getDisplayName)
                 .orElse("");
         parameterSchema.setType(typeName);
@@ -250,7 +250,7 @@ public class ApiParser {
                     return parameterSchemaHolder;
                 } else {
                     Property p = new PropertyModelConverter().modelToProperty(model);
-                    typeName = Optional.ofNullable(ParameterType.getParameterType(p.getType(), p.getFormat()))
+                    typeName = Optional.ofNullable(ParameterType.getParameterType(p.getType(), p.getFormat(), p))
                             .map(ParameterType::getDisplayName)
                             .orElse("");
                     parameterObjectSchema.setType(typeName);

@@ -1,8 +1,10 @@
 package com.github.openapi2apischema.core.enums;
 
 import io.swagger.models.properties.ByteArrayProperty;
+import io.swagger.models.properties.MapProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.v3.oas.models.media.ByteArraySchema;
+import io.swagger.v3.oas.models.media.MapSchema;
 import io.swagger.v3.oas.models.media.Schema;
 
 import java.util.Arrays;
@@ -27,6 +29,7 @@ public enum ParameterType {
     EMAIL("string", "string", "email", ""),
     UUID("string", "string", "uuid", ""),
     OBJECT("object", "object", "", ""),
+    MAP("map", "object", "", "Map"),
     ARRAY("array", "array", "", ""),
     FILE("file", "file", "", ""),
     ;
@@ -83,6 +86,9 @@ public enum ParameterType {
         if (property instanceof ByteArrayProperty) {
             name = "ByteArray";
         }
+        if (property instanceof MapProperty) {
+            name = "Map";
+        }
         for (ParameterType parameterType : values()) {
             if (parameterType.getType().equals(type) && parameterType.getFormat().equals(format) && parameterType.getName().equals(name)) {
                 return parameterType;
@@ -98,6 +104,9 @@ public enum ParameterType {
         String name = "";
         if (schema instanceof ByteArraySchema) {
             name = "ByteArray";
+        }
+        if (schema instanceof MapSchema) {
+            name = "Map";
         }
         for (ParameterType parameterType : values()) {
             if (parameterType.getType().equals(type) && parameterType.getFormat().equals(format) && parameterType.getName().equals(name)) {

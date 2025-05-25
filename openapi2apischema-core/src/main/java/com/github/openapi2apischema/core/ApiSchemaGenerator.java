@@ -9,7 +9,6 @@ import io.swagger.models.auth.AuthorizationValue;
 import io.swagger.parser.Swagger20Parser;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.parser.OpenAPIV3Parser;
-import io.swagger.v3.parser.core.models.ParseOptions;
 
 import java.io.IOException;
 import java.util.*;

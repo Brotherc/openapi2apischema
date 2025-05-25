@@ -69,6 +69,7 @@ public class ApiParser {
                 }
                 code = String.join("_", basePath, code);
             }
+            code = code.replace("{", "").replace("}", "");
             apiSchema.setCode(code);
             apiSchema.setName(code.replace("_", "."));
 

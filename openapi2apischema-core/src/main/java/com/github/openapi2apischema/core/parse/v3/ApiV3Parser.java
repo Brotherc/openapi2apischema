@@ -103,6 +103,7 @@ public class ApiV3Parser {
                 }
                 code = String.join("_", basePathTmp, code);
             }
+            code = code.replace("{", "").replace("}", "");
             apiSchema.setCode(code);
             apiSchema.setName(code.replace("_", "."));
 

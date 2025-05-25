@@ -7,10 +7,7 @@ import com.github.openapi2apischema.core.constant.ApiSchemaConstant;
 import com.github.openapi2apischema.core.enums.ParameterType;
 import com.github.openapi2apischema.core.model.*;
 import io.swagger.models.*;
-import io.swagger.models.parameters.AbstractSerializableParameter;
-import io.swagger.models.parameters.BodyParameter;
-import io.swagger.models.parameters.Parameter;
-import io.swagger.models.parameters.RefParameter;
+import io.swagger.models.parameters.*;
 import io.swagger.models.properties.ArrayProperty;
 import io.swagger.models.properties.ObjectProperty;
 import io.swagger.models.properties.Property;
@@ -191,7 +188,10 @@ public class ApiParser {
 
         ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
         parameterSchemaHolder.setParameterSchema(parameterSchema);
-        parameterSchemaHolder.setDisplaySchema(displaySchema);
+        // 如果参数类型是header或cookie，不进行展示
+        if (!(parameter instanceof HeaderParameter) && !(parameter instanceof CookieParameter)) {
+            parameterSchemaHolder.setDisplaySchema(displaySchema);
+        }
         return parameterSchemaHolder;
     }
 

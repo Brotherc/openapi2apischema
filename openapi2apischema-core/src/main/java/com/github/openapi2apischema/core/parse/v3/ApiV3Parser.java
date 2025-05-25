@@ -13,6 +13,8 @@ import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.CookieParameter;
+import io.swagger.v3.oas.models.parameters.HeaderParameter;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
@@ -214,6 +216,10 @@ public class ApiV3Parser {
 
         ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
         parameterSchemaHolder.setParameterSchema(parameterSchema);
+        // 如果参数类型是header或cookie，不进行展示
+        if (!(parameter instanceof HeaderParameter) && !(parameter instanceof CookieParameter)) {
+            parameterSchemaHolder.setDisplaySchema(displaySchema);
+        }
         parameterSchemaHolder.setDisplaySchema(displaySchema);
         return parameterSchemaHolder;
     }

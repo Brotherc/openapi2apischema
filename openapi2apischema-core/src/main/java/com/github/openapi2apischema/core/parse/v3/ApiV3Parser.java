@@ -287,8 +287,8 @@ public class ApiV3Parser {
                 properties = actualSchema.getProperties();
 
                 if (parsedObjectSchema.containsKey(refFullName)) {
-                    parameterObjectSchema.setType(refName);
-                    parsedObjectSchema.get(refFullName).setType(refName);
+                    parameterObjectSchema.setType(ApiSchemaConstant.CIRCULAR_REF_TYPE);
+                    parsedObjectSchema.get(refFullName).setType(ApiSchemaConstant.CIRCULAR_REF_TYPE);
                     ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
                     parameterSchemaHolder.setParameterSchema(parameterObjectSchema);
                     parameterSchemaHolder.setDisplaySchema(parameterObjectSchema.toJsonNode());

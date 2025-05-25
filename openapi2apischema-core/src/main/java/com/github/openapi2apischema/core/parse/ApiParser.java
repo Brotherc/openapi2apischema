@@ -241,8 +241,8 @@ public class ApiParser {
 
                 simpleRef = ((RefProperty) property).getSimpleRef();
                 if (parsedRefProperty.containsKey(simpleRef)) {
-                    parameterObjectSchema.setType(simpleRef);
-                    parsedRefProperty.get(simpleRef).setType(simpleRef);
+                    parameterObjectSchema.setType(ApiSchemaConstant.CIRCULAR_REF_TYPE);
+                    parsedRefProperty.get(simpleRef).setType(ApiSchemaConstant.CIRCULAR_REF_TYPE);
                     ParameterSchemaHolder parameterSchemaHolder = new ParameterSchemaHolder();
                     parameterSchemaHolder.setParameterSchema(parameterObjectSchema);
                     parameterSchemaHolder.setDisplaySchema(parameterObjectSchema.toJsonNode());

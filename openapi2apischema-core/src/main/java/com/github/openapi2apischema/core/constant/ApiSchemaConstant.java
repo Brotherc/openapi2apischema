@@ -15,4 +15,6 @@ public class ApiSchemaConstant {
 
     public static final String CHILDREN = "children";
 
+    public static final String CIRCULAR_REF_TYPE = "refObject";
+
 }

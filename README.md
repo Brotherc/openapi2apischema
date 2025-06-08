@@ -21,7 +21,7 @@ OpenAPI to APISchema 是一个基于JDK1.8开发的OpenAPI文档转换工具。�
 
 ```xml
 <dependency>
-    <groupId>com.github.openapi2apischema</groupId>
+    <groupId>com.github.brotherc</groupId>
     <artifactId>openapi2apischema-core</artifactId>
     <version>1.0.0</version>
 </dependency>
